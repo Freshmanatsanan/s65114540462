@@ -10,8 +10,8 @@ cd ST_65114540462
 
 เเล้วใส่รหัส 8 หลักขึ้นไป
 
-เพื่อสร้าง admin 
+เพื่อสร้าง admin  .
 
 เปิดไปที่ http://localhost:8000
 
-localhost:10462
+localhost:10462 
