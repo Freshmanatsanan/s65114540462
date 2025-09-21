@@ -1,16 +1,33 @@
 services:
-  web:
+  web: # <-- นี่คือ Django App
     build: .
     env_file:
       - .env
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "10462:8000"   # เว็บ -> 1XXXX
     networks:
       - appnet
+      - traefik-public # <-- ✅ เชื่อมต่อกับ network ภายนอก
     restart: unless-stopped
+    # command: gunicorn myproject.wsgi:application --bind 0.0.0.0:8000
+    environment:
+      # ✅ เพิ่มตัวแปรนี้ เพื่อให้ Django สร้าง URL ของ static file ได้ถูกต้อง
+      #    เพื่อนคุณต้องนำตัวแปรนี้ไปใช้ในไฟล์ settings.py
+      - APP_SUB_PATH=/s65114540462
+    labels:
+      # --- Traefik Labels สำหรับ Django App ---
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      # --- สร้าง Router ---
+      # ⚠️ เปลี่ยน sFRIENDID เป็นรหัสนักศึกษาของเพื่อน
+      - "traefik.http.routers.django-app-router.rule=PathPrefix(`/s65114540462`)"
+      # --- สร้าง Middleware สำหรับตัด Prefix ---
+      - "traefik.http.middlewares.django-stripprefix.stripprefix.prefixes=/s65114540462"
+      # --- บอกให้ Router ใช้ Middleware ---
+      - "traefik.http.routers.django-app-router.middlewares=django-stripprefix"
+      # --- บอก Port ภายในของ Django ---
+      - "traefik.http.services.django-app-service.loadbalancer.server.port=8000" # <-- Django มักจะรันที่ port 8000
 
   postgres:
     image: postgres:15
@@ -26,23 +43,30 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
-    #ports:
-    #  - "20462:5432"   # DB -> 2XXXX (แค่ expose ออกนอกเครื่อง)
     networks:
       - appnet
 
   adminer:
-    image: adminer
-    restart: unless-stopped
-    environment:
-      - ADMINER_DEFAULT_SERVER=postgres
-    #ports:
-    #  - "30462:8080"   # Adminer -> 3XXXX
-    networks:
-      - appnet
+      image: adminer
+      restart: unless-stopped
+      networks:
+        - appnet
+        - traefik-public
+      labels:
+        # --- Traefik Labels สำหรับ Adminer ---
+        - "traefik.enable=true"
+        - "traefik.docker.network=traefik-public"
+        # --- Router สำหรับ Adminer เท่านั้น ---
+        - "traefik.http.routers.django-adminer-router.rule=PathPrefix(`/s65114540462/adminer`)"
+        - "traefik.http.middlewares.django-adminer-stripprefix.stripprefix.prefixes=/s65114540462/adminer"
+        - "traefik.http.routers.django-adminer-router.middlewares=django-adminer-stripprefix"
+        - "traefik.http.services.django-adminer-service.loadbalancer.server.port=8080"
 
 volumes:
   postgres_data:
 
 networks:
   appnet:
+    driver: bridge
+  traefik-public: # <-- ✅ เพิ่ม network ของ traefik เข้ามา
+    external: true

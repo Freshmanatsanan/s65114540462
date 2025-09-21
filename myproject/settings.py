@@ -107,14 +107,30 @@ USE_I18N = True
 USE_TZ = True
 
 # ---------- Static / Media ----------
-STATIC_URL = "/static/"
+# 1. อ่านค่า Sub Path จาก Environment Variable (เหมือนเดิม)
+APP_SUB_PATH = os.environ.get('APP_SUB_PATH', '')
+
+# 2. (สำคัญที่สุด) ใช้ FORCE_SCRIPT_NAME เพื่อบอก Django ให้รู้จัก Path Prefix
+#    วิธีนี้จะทำให้การสร้าง URL ทั้งหมด (รวมถึง static) ถูกต้องโดยอัตโนมัติ
+if APP_SUB_PATH:
+    FORCE_SCRIPT_NAME = APP_SUB_PATH
+
+# 3. ตั้งค่าสำหรับ Reverse Proxy (เหมือนเดิม)
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# ---------- Static / Media ----------
+
+# 4. (สำคัญ) เปลี่ยน STATIC_URL และ MEDIA_URL กลับเป็นแบบพื้นฐาน
+#    เพราะ FORCE_SCRIPT_NAME จะจัดการเติม Prefix ให้เอง
+STATIC_URL = "s65114540462/static/"
+MEDIA_URL = "s65114540462/media/"
+
 STATIC_ROOT = BASE_DIR / "staticfiles"
 _static = BASE_DIR / "static"
 STATICFILES_DIRS = [_static] if _static.exists() else []
-MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
 # ---------- Security for production ----------
 if not DEBUG:
     SESSION_COOKIE_SECURE = False   # ตั้ง True ถ้าเข้าผ่าน HTTPS แท้
