@@ -1203,7 +1203,7 @@ def register(request):
                 except Group.DoesNotExist:
                     messages.warning(request, 'Group "Member" ยังไม่ได้ถูกสร้างในระบบ')
 
-                messages.success(request, "สมัครสมาชิกสำเร็จ!")
+                messages.success(request, "✅ สมัครสมาชิกสำเร็จ!")
                 return redirect("register") 
             
 

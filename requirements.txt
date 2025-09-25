@@ -26,3 +26,7 @@ google-auth-oauthlib
 httplib2
 uritemplate
 cryptography
+
+cloudinary
+django-cloudinary-storage
+python-dotenv

@@ -5,8 +5,13 @@ import os
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+from dotenv import load_dotenv  # <<< เพิ่มเข้ามา: สำหรับโหลดไฟล์ .env
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file
+load_dotenv()  # <<< เพิ่มเข้ามา: สั่งให้โหลดค่าจาก .env
 
 # ---------- Base ----------
 SECRET_KEY = os.getenv("SECRET_KEY", "fallback-secret-key")
@@ -29,6 +34,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # --- เพิ่ม 2 บรรทัดนี้สำหรับ Cloudinary ---
+    'cloudinary_storage',
+    'cloudinary',
+    # --- สิ้นสุดส่วนที่เพิ่ม ---
     "myapp.apps.MyappConfig",
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
@@ -106,36 +115,44 @@ TIME_ZONE = "Asia/Bangkok"
 USE_I18N = True
 USE_TZ = True
 
-# ---------- Static / Media ----------
-# 1. อ่านค่า Sub Path จาก Environment Variable (เหมือนเดิม)
+# ---------- Reverse Proxy Settings ----------
 APP_SUB_PATH = os.environ.get('APP_SUB_PATH', '')
-
-# 2. (สำคัญที่สุด) ใช้ FORCE_SCRIPT_NAME เพื่อบอก Django ให้รู้จัก Path Prefix
-#    วิธีนี้จะทำให้การสร้าง URL ทั้งหมด (รวมถึง static) ถูกต้องโดยอัตโนมัติ
 if APP_SUB_PATH:
     FORCE_SCRIPT_NAME = APP_SUB_PATH
 
-# 3. ตั้งค่าสำหรับ Reverse Proxy (เหมือนเดิม)
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ---------- Static / Media ----------
-
-# 4. (สำคัญ) เปลี่ยน STATIC_URL และ MEDIA_URL กลับเป็นแบบพื้นฐาน
-#    เพราะ FORCE_SCRIPT_NAME จะจัดการเติม Prefix ให้เอง
+# Static files (CSS, JavaScript, Images) - (Whitenoise)
 STATIC_URL = "s65114540462/static/"
-MEDIA_URL = "s65114540462/media/"
-
 STATIC_ROOT = BASE_DIR / "staticfiles"
 _static = BASE_DIR / "static"
 STATICFILES_DIRS = [_static] if _static.exists() else []
-MEDIA_ROOT = BASE_DIR / "media"
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Media files (User uploaded files) - (Cloudinary)
+MEDIA_URL = "s65114540462/media/"  # ยังคงไว้ แต่ Cloudinary จะสร้าง URL ของตัวเอง
+# MEDIA_ROOT ไม่จำเป็นต้องใช้เมื่อเก็บไฟล์บน Cloudinary
+# MEDIA_ROOT = BASE_DIR / "media"
+
+# --- เพิ่มการตั้งค่าสำหรับ Cloudinary ---
+#CLOUDINARY_STORAGE = {
+#    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+#    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+#    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),
+#}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# บอก Django ให้ใช้ Cloudinary เป็นที่เก็บไฟล์ Media ที่อัปโหลด
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# --- สิ้นสุดส่วนที่เพิ่ม ---
+
+
 # ---------- Security for production ----------
 if not DEBUG:
-    SESSION_COOKIE_SECURE = False   # ตั้ง True ถ้าเข้าผ่าน HTTPS แท้
-    CSRF_COOKIE_SECURE = False      # ตั้ง True ถ้าเข้าผ่าน HTTPS แท้
-    SECURE_HSTS_SECONDS = 0         # เปิด HSTS เฉพาะเมื่อมี HTTPS
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
 
